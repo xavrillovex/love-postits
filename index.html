@@ -92,7 +92,6 @@
       transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0);
     }
 
-    /* hover wobble */
     .post-it.clickable:hover {
       animation: wobble 0.55s ease-in-out infinite;
     }
@@ -102,21 +101,18 @@
       100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(calc(var(--rot) - 0.5deg)); }
     }
 
-    /* smooth "go back" animation for valentine note */
     .backing-out {
       opacity: 0.15;
       transform: translate(calc(-50% + var(--dx) - 10px), calc(-50% + var(--dy) + 6px)) rotate(var(--rot));
       transition: opacity 220ms ease, transform 220ms ease;
     }
 
-    /* reveal animation */
     .soft-in { animation: softIn 260ms ease-out; }
     @keyframes softIn {
       0% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0.98); }
       100% { opacity: 1; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(1); }
     }
 
-    /* kaomoji */
     .kaomoji {
       position: absolute;
       font-size: 1.05rem;
@@ -129,7 +125,7 @@
       100% { transform: translateY(-60px) scale(1.15); opacity: 0; }
     }
 
-    /* ---------- BURST LAYER ---------- */
+    /* ---------- BURST ---------- */
     #burstLayer{
       position: fixed;
       inset: 0;
@@ -147,9 +143,7 @@
       transform: translate(-50%, -50%) translate(0px, 0px) scale(var(--s)) rotate(var(--r));
       will-change: transform, opacity;
 
-      animation:
-        flyOut 520ms ease-out forwards,
-        fadeOut 520ms ease-out forwards;
+      animation: flyOut 520ms ease-out forwards, fadeOut 520ms ease-out forwards;
     }
     @keyframes flyOut{
       to {
@@ -196,7 +190,7 @@
       transform: rotate(90deg);
     }
 
-    /* ---------- VALENTINE BUTTONS + PUSHEENS ---------- */
+    /* ---------- VALENTINE UI ---------- */
     .valentine-wrap {
       display: flex;
       flex-direction: column;
@@ -288,7 +282,7 @@
       background: rgba(255,255,255,0.6);
     }
 
-    /* ---------- SPOTIFY CARD ---------- */
+    /* ---------- SPOTIFY ---------- */
     .spotify-card {
       display: flex;
       flex-direction: column;
@@ -305,7 +299,7 @@
     }
     .spotify-title { font-size: 1.05rem; }
 
-    /* ---------- LOVE CALCULATOR (FIXED LAYOUT) ---------- */
+    /* ---------- LOVE CALC (fixed) ---------- */
     .calc {
       width: 100%;
       height: 100%;
@@ -378,7 +372,6 @@
 </head>
 
 <body>
-  <!-- INTRO -->
   <div id="intro">
     <div id="intro-text">
       click ANYWHERE NOW ( ｡ •̀ ᴖ •́ ｡)💢
@@ -423,7 +416,7 @@
     i love u Kai, truly forever and always, and with that being said...
   </div>
 
-  <!-- SEAFOAM NOTE -->
+  <!-- SEAFOAM -->
   <div class="post-it clickable" data-love="1" id="newFeelingsNote"
        style="z-index:3; --dx:3px; --dy:15px; --rot:-0.1deg; background:#d6ebe7;"
        onclick="gentleClick(this,event)">
@@ -460,7 +453,7 @@
   <div class="post-it" data-love="1" id="messageNote"
        style="z-index:1; --dx:0px; --dy:18px; --rot:0.2deg; background:#f1e9a9;">
     <div class="valentine-wrap">
-      <div class="valentine-text">leave me a lil note ദ্দി ˉ͈̀꒳ˉ͈́ )✧</div>
+      <div class="valentine-text">leave me a lil note ദ্দி ˉ͈̀꒳ˉ͈́ )✧</div>
 
       <textarea id="hisMsg" class="msgBox" maxlength="250" placeholder="type here..."></textarea>
       <div style="font-size:0.85rem; opacity:0.6;" id="charCount">0 / 250</div>
@@ -473,7 +466,7 @@
     </div>
   </div>
 
-  <!-- LOVE CALCULATOR (BEFORE SPOTIFY, IN THE FLOW) -->
+  <!-- LOVE CALC (hidden until message note completes) -->
   <div class="post-it clickable hide" data-love="1" id="loveCalcNote"
        style="z-index:0; --dx:10px; --dy:-12px; --rot:-0.4deg; background:#ffd7ea;"
        onclick="calcPeelToSpotify(event)">
@@ -490,7 +483,7 @@
     </div>
   </div>
 
-  <!-- SPOTIFY (HIDDEN UNTIL CALC IS PEELED) -->
+  <!-- SPOTIFY (hidden until calc peeled) -->
   <div class="post-it clickable hide" id="spotifyNote"
        style="z-index:0; --dx:0px; --dy:18px; --rot:0.2deg; background:#bfdced;"
        onclick="window.open('https://open.spotify.com/playlist/5coHt3xfiJXlN4iYdMt005','_blank')">
@@ -506,10 +499,9 @@
        onclick="peel(this,'(〃▽〃)',event)">
     i tried my best with this,<br><br>
     hope u approve mr coder 😼<br><br>
-    دდि(｡•̀ ,&lt;)~✩
+    dدi(｡•̀ ,&lt;)~✩
   </div>
 
-  <!-- RESET -->
   <button id="reset" onclick="location.reload()">reset if u miss me ↺</button>
 
   <script>
@@ -653,6 +645,16 @@
     const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdKhxWqvH6K7P67tkE2fPq_g3DrGiCZ0IfDz9yrG5buX4EdhA/formResponse";
     const ENTRY_MSG = "entry.1288593926";
 
+    const loveCalcNote = document.getElementById('loveCalcNote');
+    const spotifyNote = document.getElementById('spotifyNote');
+
+    function revealNote(noteEl){
+      noteEl.classList.remove('hide');
+      noteEl.classList.remove('soft-in');
+      void noteEl.offsetWidth;
+      noteEl.classList.add('soft-in');
+    }
+
     sendMsgBtn.addEventListener('click', async (e) => {
       stop(e);
       const msg = msgBox.value.trim();
@@ -671,28 +673,24 @@
 
       setTimeout(() => {
         peel(document.getElementById('messageNote'), '(≧◡≦)', e);
+
+        // ✅ THIS IS THE MISSING PIECE: show calculator after message note peels
+        setTimeout(() => {
+          revealNote(loveCalcNote);
+        }, 260);
+
       }, 650);
     });
 
-    /* -------- Love calc is a real note now; when peeled, reveal Spotify -------- */
-    const loveCalcNote = document.getElementById('loveCalcNote');
-    const spotifyNote = document.getElementById('spotifyNote');
-
     function calcPeelToSpotify(e){
-      // clicking inside the calculator UI shouldn't peel the note
-      // (but the container already stops propagation)
       peel(loveCalcNote, '(｡•̀ᴗ-)✧', e);
 
-      // reveal spotify after a tiny beat so it feels like "next"
       setTimeout(() => {
-        spotifyNote.classList.remove('hide');
-        spotifyNote.classList.remove('soft-in');
-        void spotifyNote.offsetWidth;
-        spotifyNote.classList.add('soft-in');
+        revealNote(spotifyNote);
       }, 220);
     }
 
-    /* -------- Rigged Love Calculator -------- */
+    // Love calculator rig
     const nameA = document.getElementById('nameA');
     const nameB = document.getElementById('nameB');
     const calcBtn = document.getElementById('calcBtn');
@@ -701,7 +699,6 @@
     function norm(s){
       return (s || "").trim().toLowerCase().replace(/\s+/g, "");
     }
-
     function hashStr(s){
       let h = 0;
       for (let i = 0; i < s.length; i++){
@@ -709,66 +706,50 @@
       }
       return h;
     }
-
     function calcCompat(a, b){
       const A = norm(a);
       const B = norm(b);
       if ((A === "abi" && B === "kai") || (A === "kai" && B === "abi")) return 100;
-      return 12 + (hashStr(A + "|" + B) % 81); // 12..92
+      return 12 + (hashStr(A + "|" + B) % 81);
     }
 
     calcBtn.addEventListener('click', (e) => {
       e.stopPropagation();
 
-      const a = nameA.value;
-      const b = nameB.value;
-
-      if (!a.trim() || !b.trim()) {
+      if (!nameA.value.trim() || !nameB.value.trim()) {
         calcResult.textContent = "u have to type both names silly";
         return;
       }
 
-      const pct = calcCompat(a, b);
+      const pct = calcCompat(nameA.value, nameB.value);
 
-      if (pct === 100) {
-        calcResult.textContent = `💗 ${pct}% compatible (obviously) 💗`;
-      } else if (pct >= 80) {
-        calcResult.textContent = `✨ ${pct}% compatible ✨ (okay wait...)`;
-      } else if (pct >= 50) {
-        calcResult.textContent = `😼 ${pct}% compatible (not bad)`;
-      } else {
-        calcResult.textContent = `😭 ${pct}% compatible (rip)`;
-      }
+      if (pct === 100) calcResult.textContent = `💗 ${pct}% compatible (obviously) 💗`;
+      else if (pct >= 80) calcResult.textContent = `✨ ${pct}% compatible ✨ (okay wait...)`;
+      else if (pct >= 50) calcResult.textContent = `😼 ${pct}% compatible (not bad)`;
+      else calcResult.textContent = `😭 ${pct}% compatible (rip)`;
 
       spawnBurst(e.clientX, e.clientY);
       popKaomoji('(｡•̀ᴗ-)✧', e, 900);
     });
 
-    /* -------- SECRET MESSAGE EASTER EGG (Spotify cover 5 clicks) -------- */
+    // Spotify cover 5-click secret
     const spotifyCover = document.getElementById('spotifyCover');
     const secretNote = document.getElementById('secretNote');
     let secretClicks = 0;
 
     spotifyCover.addEventListener('click', (e) => {
       e.stopPropagation();
-
       secretClicks++;
+
       popKaomoji('(￢‿￢ )', e, 700);
       spawnBurst(e.clientX, e.clientY);
 
       if (secretClicks === 5) {
         secretClicks = 0;
-
-        secretNote.classList.remove('hide');
-        secretNote.classList.remove('soft-in');
-        void secretNote.offsetWidth;
-        secretNote.classList.add('soft-in');
-
+        revealNote(secretNote);
         popKaomoji('(〃▽〃)', e, 1200);
       }
     });
   </script>
 </body>
 </html>
-
-
