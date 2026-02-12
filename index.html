@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Love Post-Its</title>
+
+  <style>
+    @font-face {
+      font-family: 'RoyalBrand-Regular';
+      src: url('RoyalBrand-Regular.otf') format('opentype');
+      font-display: swap;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: 'RoyalBrand-Regular', sans-serif;
+      overflow: hidden;
+      position: relative;
+
+      /* soft off-white paper texture */
+      background:
+        radial-gradient(circle at 20% 15%, rgba(0,0,0,0.025), transparent 45%),
+        radial-gradient(circle at 80% 35%, rgba(0,0,0,0.018), transparent 50%),
+        radial-gradient(circle at 40% 85%, rgba(0,0,0,0.018), transparent 55%),
+        repeating-linear-gradient(
+          0deg,
+          rgba(0,0,0,0.012) 0px,
+          rgba(0,0,0,0.012) 1px,
+          transparent 1px,
+          transparent 7px
+        ),
+        linear-gradient(#fdfcf8, #fdfcf8);
+    }
+
+    /* ---------- INTRO ---------- */
+    #intro {
+      position: fixed;
+      inset: 0;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 99999;
+      cursor: pointer;
+      opacity: 1;
+      transition: opacity 280ms ease;
+    }
+    #intro.fade-out { opacity: 0; pointer-events: none; }
+    #intro-text {
+      font-size: 2.5rem;
+      color: #2f2f2f;
+      line-height: 1.4;
+      padding: 24px;
+    }
+    #intro-text span {
+      display: block;
+      font-size: 1.5rem;
+      margin-top: 12px;
+    }
+
+    /* ---------- NOTES ---------- */
+    .post-it {
+      width: 260px;
+      height: 260px;
+      padding: 22px;
+      border-radius: 14px;
+      box-shadow: 3px 3px 14px rgba(0,0,0,0.14);
+      color: #2f2f2f;
+      font-size: 1.22rem;
+      line-height: 1.3;
+      user-select: none;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot));
+      transition: transform 0.35s ease, opacity 0.35s ease;
+    }
+
+    .clickable { cursor: pointer; }
+
+    .hide {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0);
+    }
+
+    /* hover wobble */
+    .post-it.clickable:hover {
+      animation: wobble 0.55s ease-in-out infinite;
+    }
+    @keyframes wobble {
+      0% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(calc(var(--rot) - 0.5deg)); }
+      50% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(calc(var(--rot) + 0.5deg)); }
+      100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(calc(var(--rot) - 0.5deg)); }
+    }
+
+    /* smooth "go back" animation for valentine note */
+    .backing-out {
+      opacity: 0.15;
+      transform: translate(calc(-50% + var(--dx) - 10px), calc(-50% + var(--dy) + 6px)) rotate(var(--rot));
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    /* secret note reveal */
+    .soft-in {
+      animation: softIn 260ms ease-out;
+    }
+    @keyframes softIn {
+      0% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0.98); }
+      100% { opacity: 1; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(1); }
+    }
+
+    /* kaomoji */
+    .kaomoji {
+      position: absolute;
+      font-size: 1.05rem;
+      pointer-events: none;
+      z-index: 9999;
+      animation: pop 0.75s forwards;
+    }
+    @keyframes pop {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-60px) scale(1.15); opacity: 0; }
+    }
+
+    /* =========================================================
+       BURST SYSTEM (non-vertical on deploy)
+    ========================================================== */
+
+    #burstLayer{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9998;
+    }
+
+    .particle{
+      position: absolute;
+      pointer-events: none;
+      opacity: 1;
+      filter: drop-shadow(0 1px 0 rgba(0,0,0,0.06));
+      left: 0;
+      top: 0;
+
+      transform: translate(-50%, -50%) translate(0px, 0px) scale(var(--s)) rotate(var(--r));
+      will-change: transform, opacity;
+
+      animation:
+        flyOut 520ms ease-out forwards,
+        fadeOut 520ms ease-out forwards;
+    }
+
+    @keyframes flyOut{
+      to {
+        transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(calc(var(--s) * 0.85)) rotate(calc(var(--r) + 55deg));
+      }
+    }
+    @keyframes fadeOut{
+      to { opacity: 0; }
+    }
+
+    .heart {
+      width: 10px;
+      height: 10px;
+      background: var(--pink);
+      transform: rotate(45deg);
+      position: relative;
+      border-radius: 2px;
+    }
+    .heart::before,
+    .heart::after {
+      content: "";
+      width: 10px;
+      height: 10px;
+      background: var(--pink);
+      border-radius: 50%;
+      position: absolute;
+    }
+    .heart::before { top: -5px; left: 0; }
+    .heart::after  { left: -5px; top: 0; }
+
+    .sparkle {
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 240, 170, 0.65);
+      transform: rotate(45deg);
+      border-radius: 1px;
+      position: relative;
+    }
+    .sparkle::before,
+    .sparkle::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 240, 170, 0.65);
+      border-radius: 1px;
+      transform: rotate(90deg);
+    }
+
+    /* ---------- VALENTINE BUTTONS + PUSHEENS ---------- */
+    .valentine-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    .valentine-text { font-size: 1.12rem; padding: 0 8px; }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .btn {
+      border: none;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.55);
+      color: #2f2f2f;
+      font-family: 'RoyalBrand-Regular', sans-serif;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+      transition: transform 0.12s ease;
+    }
+    .btn:hover { transform: scale(1.03); }
+
+    .choiceCats {
+      height: 54px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 6px;
+      width: 100%;
+    }
+    .choiceCats img {
+      width: 54px;
+      height: 54px;
+      object-fit: contain;
+      opacity: 0;
+      transform: translateY(2px) scale(0.96);
+      transition: opacity 140ms ease, transform 140ms ease;
+      pointer-events: none;
+    }
+
+    #yesBtn:hover ~ .choiceCats #catYes {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      animation: catBounce 900ms ease-in-out infinite;
+    }
+    @keyframes catBounce {
+      0%   { transform: translateY(0) scale(1); }
+      50%  { transform: translateY(-2px) scale(1.01); }
+      100% { transform: translateY(0) scale(1); }
+    }
+
+    #noBtn:hover ~ .choiceCats #catNo {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      animation: catShake 650ms ease-in-out infinite;
+    }
+    @keyframes catShake {
+      0%   { transform: translateX(0) scale(1); }
+      25%  { transform: translateX(-1px) scale(1); }
+      50%  { transform: translateX(1px) scale(1); }
+      75%  { transform: translateX(-1px) scale(1); }
+      100% { transform: translateX(0) scale(1); }
+    }
+
+    /* ---------- MESSAGE NOTE ---------- */
+    .msgBox {
+      width: 90%;
+      height: 95px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.15);
+      font-family: 'RoyalBrand-Regular', sans-serif;
+      font-size: 1rem;
+      outline: none;
+      resize: none;
+      box-sizing: border-box;
+      background: rgba(255,255,255,0.6);
+    }
+
+    /* ---------- SPOTIFY CARD ---------- */
+    .spotify-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .spotify-card img {
+      width: 205px;
+      height: 205px;
+      object-fit: cover;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .spotify-title { font-size: 1.05rem; }
+
+    /* ---------- LOVE CALCULATOR ---------- */
+    .calc {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      box-sizing: border-box;
+    }
+    .calcTitle { font-size: 1.12rem; }
+    .calcRow{
+      display: flex;
+      gap: 8px;
+      width: 92%;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .calcInput{
+      width: 44%;
+      min-width: 110px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.15);
+      background: rgba(255,255,255,0.65);
+      font-family: 'RoyalBrand-Regular', sans-serif;
+      font-size: 1rem;
+      outline: none;
+      text-align: center;
+    }
+    .calcResult{
+      margin-top: 6px;
+      min-height: 44px;
+      width: 92%;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 10px;
+      box-sizing: border-box;
+      font-size: 1.05rem;
+      color: rgba(0,0,0,0.75);
+    }
+
+    /* ---------- RESET ---------- */
+    #reset {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(238,238,238,0.9);
+      border: none;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-family: 'RoyalBrand-Regular', sans-serif;
+      font-size: 0.95rem;
+      cursor: pointer;
+      z-index: 100001;
+      display: none;
+    }
+    #reset:hover { background: rgba(221,221,221,0.95); }
+  </style>
+</head>
+
+<body>
+  <!-- INTRO -->
+  <div id="intro">
+    <div id="intro-text">
+      click ANYWHERE NOW ( ｡ •̀ ᴖ •́ ｡)💢
+      <span>please i beg u sweet</span>
+    </div>
+  </div>
+
+  <!-- Burst Layer -->
+  <div id="burstLayer"></div>
+
+  <!-- NOTE 1 -->
+  <div class="post-it clickable" data-love="1"
+       style="z-index:8; --dx:-10px; --dy:-8px; --rot:-1.0deg; background:#f3c6d6;"
+       onclick="peel(this,'(*≧ω≦)',event)">
+    hii kai, i hope u r well when u open this
+  </div>
+
+  <!-- NOTE 2 -->
+  <div class="post-it clickable" data-love="1"
+       style="z-index:7; --dx:6px; --dy:-3px; --rot:0.7deg; background:#f1e9a9;"
+       onclick="peel(this,'(｡♥‿♥｡)',event)">
+    we may have had a lot of time apart, but....
+  </div>
+
+  <!-- NOTE 3 -->
+  <div class="post-it clickable" data-love="1"
+       style="z-index:6; --dx:-4px; --dy:7px; --rot:-0.5deg; background:#bfdced;"
+       onclick="peel(this,'((⸝⸝´꒳`⸝⸝)',event)">
+    do NOT APOLOGISE, ive missed u and im happy u are here, regardless of how long for
+  </div>
+
+  <!-- NOTE 4 -->
+  <div class="post-it clickable" data-love="1"
+       style="z-index:5; --dx:10px; --dy:6px; --rot:0.9deg; background:#d7c0e3;"
+       onclick="peel(this,'(˵ •̀ ᴗ - ˵ ) ✧',event)">
+    i think u are an angel, u are so caring and kind and u are really funny too, u r a smart cookie
+  </div>
+
+  <!-- NOTE 5 -->
+  <div class="post-it clickable" data-love="1" id="prevNote"
+       style="z-index:4; --dx:-7px; --dy:12px; --rot:0.4deg; background:#c5e2d2;"
+       onclick="peel(this,'(*´▽`*)',event)">
+    i love u Kai, truly forever and always, and with that being said...
+  </div>
+
+  <!-- SEAFOAM NOTE (gentle) -->
+  <div class="post-it clickable" data-love="1" id="newFeelingsNote"
+       style="z-index:3; --dx:3px; --dy:15px; --rot:-0.1deg; background:#d6ebe7;"
+       onclick="gentleClick(this,event)">
+    i feel really lucky that our paths crossed.<br>
+    u have had such a soft but real impact on me,<br>
+    and i do not take that lightly at all.<br>
+    im grateful for u, truly.<br>
+    id love to know u more,<br>
+    the way u think, the little things that make u u,<br>
+    at your pace if u do let me.
+  </div>
+
+  <!-- VALENTINE -->
+  <div class="post-it" data-love="1" id="valentineNote"
+       style="z-index:2; --dx:7px; --dy:14px; --rot:-0.2deg; background:#f2dbb8;">
+    <div class="valentine-wrap">
+      <div class="valentine-text">
+        Kai, would u be my valentine? maybe??? i hope??? i really like u. im scared.
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="yesBtn">YES</button>
+        <button class="btn" id="noBtn">NO</button>
+
+        <div class="choiceCats">
+          <img id="catYes" src="pusheen-happy.png" alt="happy cat">
+          <img id="catNo" src="pusheen-angry.png" alt="angry cat">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MESSAGE NOTE -->
+  <div class="post-it" data-love="1" id="messageNote"
+       style="z-index:1; --dx:0px; --dy:18px; --rot:0.2deg; background:#f1e9a9;">
+    <div class="valentine-wrap">
+      <div class="valentine-text">leave me a lil note ദ্দി ˉ͈̀꒳ˉ͈́ )✧</div>
+
+      <textarea id="hisMsg" class="msgBox" maxlength="250" placeholder="type here..."></textarea>
+      <div style="font-size:0.85rem; opacity:0.6;" id="charCount">0 / 250</div>
+
+      <div class="btn-row">
+        <button class="btn" id="sendMsgBtn">send</button>
+      </div>
+
+      <div id="sentConfirm" style="display:none; font-size:1rem;">sent 😼</div>
+    </div>
+  </div>
+
+  <!-- LOVE CALCULATOR (NOW BEFORE SPOTIFY) -->
+  <div class="post-it clickable hide" data-love="0" id="loveCalcNote"
+       style="z-index:0; --dx:10px; --dy:-12px; --rot:-0.4deg; background:#ffd7ea;"
+       onclick="peel(this,'(｡•̀ᴗ-)✧',event)">
+    <div class="calc" onclick="event.stopPropagation()">
+      <div class="calcTitle">love calculator (definitely real)</div>
+      <div class="calcRow">
+        <input id="nameA" class="calcInput" placeholder="your name" />
+        <input id="nameB" class="calcInput" placeholder="their name" />
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="calcBtn">calculate</button>
+      </div>
+      <div id="calcResult" class="calcResult">type names & press calculate</div>
+    </div>
+  </div>
+
+  <!-- SPOTIFY (note opens spotify; cover 5x unlocks secret) -->
+  <div class="post-it clickable" id="spotifyNote"
+       style="z-index:0; --dx:0px; --dy:18px; --rot:0.2deg; background:#bfdced;"
+       onclick="openSpotifyAndShowCalc(event)">
+    <div class="spotify-card">
+      <img id="spotifyCover" src="playlistcover.jpg" alt="Playlist cover" title="psst">
+      <div class="spotify-title">Playlist for u</div>
+    </div>
+  </div>
+
+  <!-- SECRET NOTE (hidden until unlocked) -->
+  <div class="post-it clickable hide" data-love="0" id="secretNote"
+       style="z-index:9; --dx:0px; --dy:0px; --rot:0.3deg; background:#e8ddf2;"
+       onclick="peel(this,'(〃▽〃)',event)">
+    i tried my best with this,<br><br>
+    hope u approve mr coder 😼<br><br>
+    দ্দি(｡•̀ ,&lt;)~✩
+  </div>
+
+  <!-- RESET -->
+  <button id="reset" onclick="location.reload()">reset if u miss me ↺</button>
+
+  <script>
+    const intro = document.getElementById('intro');
+    const resetBtn = document.getElementById('reset');
+    const burstLayer = document.getElementById('burstLayer');
+
+    intro.addEventListener('click', () => {
+      intro.classList.add('fade-out');
+      setTimeout(() => { intro.style.display = 'none'; }, 300);
+    });
+
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+
+    function popKaomoji(text, event, ms = 750) {
+      const k = document.createElement('span');
+      k.className = 'kaomoji';
+      k.innerText = text;
+      k.style.left = (event.clientX - 8) + 'px';
+      k.style.top = (event.clientY - 10) + 'px';
+      document.body.appendChild(k);
+      setTimeout(() => k.remove(), ms);
+    }
+
+    function spawnBurst(x, y) {
+      const pinks = [
+        'rgba(255,175,205,0.6)',
+        'rgba(255,195,215,0.6)',
+        'rgba(255,210,225,0.6)',
+        'rgba(245,170,195,0.6)'
+      ];
+
+      const hearts = 16;
+      const sparkles = 14;
+
+      const minR = 16;
+      const maxR = 44;
+
+      for (let i = 0; i < hearts + sparkles; i++) {
+        const isHeart = i < hearts;
+
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+
+        const shape = document.createElement('div');
+        shape.className = isHeart ? 'heart' : 'sparkle';
+
+        if (isHeart) {
+          const pink = pinks[Math.floor(Math.random() * pinks.length)];
+          shape.style.setProperty('--pink', pink);
+        }
+
+        const angle = Math.random() * Math.PI * 2;
+        const dist  = rand(minR, maxR);
+
+        const dx = Math.cos(angle) * dist;
+        const dy = Math.sin(angle) * dist;
+
+        const s = isHeart ? rand(0.75, 1.12) : rand(0.45, 0.72);
+        const r = rand(-40, 40);
+
+        p.style.setProperty('--dx', dx.toFixed(2) + 'px');
+        p.style.setProperty('--dy', dy.toFixed(2) + 'px');
+        p.style.setProperty('--s', s);
+        p.style.setProperty('--r', r + 'deg');
+
+        p.appendChild(shape);
+        burstLayer.appendChild(p);
+
+        setTimeout(() => p.remove(), 700);
+      }
+    }
+
+    function peel(el, kaomoji, event) {
+      el.classList.add('hide');
+      popKaomoji(kaomoji, event);
+      spawnBurst(event.clientX, event.clientY);
+      checkEnd();
+    }
+
+    function peelNoKaomoji(el, event) {
+      el.classList.add('hide');
+      spawnBurst(event.clientX, event.clientY);
+      checkEnd();
+    }
+
+    function checkEnd() {
+      const loveNotes = document.querySelectorAll('[data-love="1"]');
+      const allDone = Array.from(loveNotes).every(n => n.classList.contains('hide'));
+      if (allDone) resetBtn.style.display = 'block';
+    }
+
+    function gentleClick(el, event) {
+      popKaomoji('( ˶˘ ᴗ ˘˶ )', event, 1200);
+      peelNoKaomoji(el, event);
+    }
+
+    // Valentine logic
+    const valentineNote = document.getElementById('valentineNote');
+    const newFeelingsNote = document.getElementById('newFeelingsNote');
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn = document.getElementById('noBtn');
+
+    let goingBack = false;
+    function stop(e){ e.stopPropagation(); }
+
+    yesBtn.addEventListener('click', (e) => {
+      stop(e);
+      peel(valentineNote, '(*ฅ́ ˘ฅ̀*)♡', e);
+    });
+
+    noBtn.addEventListener('click', (e) => {
+      stop(e);
+      if (goingBack) return;
+      goingBack = true;
+
+      popKaomoji('(¬_¬")', e, 1600);
+      valentineNote.classList.add('backing-out');
+
+      setTimeout(() => {
+        if (newFeelingsNote.classList.contains('hide')) {
+          newFeelingsNote.classList.remove('hide');
+        }
+        valentineNote.classList.remove('backing-out');
+        setTimeout(() => { goingBack = false; }, 260);
+      }, 220);
+    });
+
+    // Message note -> Google Form submit
+    const sendMsgBtn = document.getElementById('sendMsgBtn');
+    const sentConfirm = document.getElementById('sentConfirm');
+    const msgBox = document.getElementById('hisMsg');
+    const charCount = document.getElementById('charCount');
+
+    msgBox.addEventListener('input', () => {
+      charCount.textContent = msgBox.value.length + " / 250";
+    });
+
+    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdKhxWqvH6K7P67tkE2fPq_g3DrGiCZ0IfDz9yrG5buX4EdhA/formResponse";
+    const ENTRY_MSG = "entry.1288593926";
+
+    sendMsgBtn.addEventListener('click', async (e) => {
+      stop(e);
+      const msg = msgBox.value.trim();
+      if (!msg) return;
+
+      const data = new FormData();
+      data.append(ENTRY_MSG, msg);
+
+      try {
+        await fetch(FORM_URL, { method: "POST", mode: "no-cors", body: data });
+      } catch (_) {}
+
+      sentConfirm.style.display = "block";
+      sendMsgBtn.disabled = true;
+      sendMsgBtn.textContent = "sent";
+
+      setTimeout(() => {
+        peel(document.getElementById('messageNote'), '(≧◡≦)', e);
+      }, 650);
+    });
+
+    /* -------- SECRET MESSAGE EASTER EGG -------- */
+    const spotifyCover = document.getElementById('spotifyCover');
+    const secretNote = document.getElementById('secretNote');
+    let secretClicks = 0;
+
+    spotifyCover.addEventListener('click', (e) => {
+      e.stopPropagation();
+      secretClicks++;
+
+      popKaomoji('(￢‿￢ )', e, 700);
+      spawnBurst(e.clientX, e.clientY);
+
+      if (secretClicks === 5) {
+        secretClicks = 0;
+
+        secretNote.classList.remove('hide');
+        secretNote.classList.remove('soft-in');
+        void secretNote.offsetWidth;
+        secretNote.classList.add('soft-in');
+
+        popKaomoji('(〃▽〃)', e, 1200);
+      }
+    });
+
+    /* -------- Spotify click shows calculator first, then opens Spotify -------- */
+    const loveCalcNote = document.getElementById('loveCalcNote');
+    let calcShown = false;
+
+    function openSpotifyAndShowCalc(event){
+      // show calculator first
+      if (!calcShown) {
+        calcShown = true;
+        loveCalcNote.classList.remove('hide');
+        loveCalcNote.classList.remove('soft-in');
+        void loveCalcNote.offsetWidth;
+        loveCalcNote.classList.add('soft-in');
+      }
+
+      // then open spotify
+      window.open('https://open.spotify.com/playlist/5coHt3xfiJXlN4iYdMt005','_blank');
+
+      spawnBurst(event.clientX, event.clientY);
+    }
+
+    /* -------- Rigged Love Calculator -------- */
+    const nameA = document.getElementById('nameA');
+    const nameB = document.getElementById('nameB');
+    const calcBtn = document.getElementById('calcBtn');
+    const calcResult = document.getElementById('calcResult');
+
+    function norm(s){
+      return (s || "").trim().toLowerCase().replace(/\s+/g, "");
+    }
+
+    function hashStr(s){
+      let h = 0;
+      for (let i = 0; i < s.length; i++){
+        h = (h * 31 + s.charCodeAt(i)) >>> 0;
+      }
+      return h;
+    }
+
+    function calcCompat(a, b){
+      const A = norm(a);
+      const B = norm(b);
+      const isAbiKai = (A === "abi" && B === "kai") || (A === "kai" && B === "abi");
+      if (isAbiKai) return 100;
+
+      // stable pseudo-random 12..92 (never 100)
+      const h = hashStr(A + "|" + B);
+      return 12 + (h % 81);
+    }
+
+    calcBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      const a = nameA.value;
+      const b = nameB.value;
+
+      if (!a.trim() || !b.trim()) {
+        calcResult.textContent = "u have to type both names silly";
+        return;
+      }
+
+      const pct = calcCompat(a, b);
+
+      if (pct === 100) {
+        calcResult.textContent = `💗 ${pct}% compatible (obviously) 💗`;
+      } else if (pct >= 80) {
+        calcResult.textContent = `✨ ${pct}% compatible ✨ (okay wait...)`;
+      } else if (pct >= 50) {
+        calcResult.textContent = `😼 ${pct}% compatible (not bad)`;
+      } else {
+        calcResult.textContent = `😭 ${pct}% compatible (rip)`;
+      }
+
+      spawnBurst(e.clientX, e.clientY);
+      popKaomoji('(｡•̀ᴗ-)✧', e, 900);
+    });
+  </script>
+</body>
+</html>
