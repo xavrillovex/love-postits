@@ -111,9 +111,7 @@
     }
 
     /* secret note reveal */
-    .soft-in {
-      animation: softIn 260ms ease-out;
-    }
+    .soft-in { animation: softIn 260ms ease-out; }
     @keyframes softIn {
       0% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0.98); }
       100% { opacity: 1; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(1); }
@@ -126,6 +124,7 @@
       pointer-events: none;
       z-index: 9999;
       animation: pop 0.75s forwards;
+      white-space: nowrap;
     }
     @keyframes pop {
       0% { transform: translateY(0) scale(1); opacity: 1; }
@@ -309,7 +308,6 @@
     }
     .spotify-title { font-size: 1.05rem; }
 
-    /* anchor styling (so it doesn't look like a blue link) */
     .spotify-link {
       text-decoration: none;
       color: inherit;
@@ -385,7 +383,7 @@
       font-size: 0.95rem;
       cursor: pointer;
       z-index: 100001;
-      display: none; /* hidden until end */
+      display: none;
     }
     #reset:hover { background: rgba(221,221,221,0.95); }
   </style>
@@ -474,7 +472,7 @@
   <div class="post-it" data-love="1" id="messageNote"
        style="z-index:1; --dx:0px; --dy:18px; --rot:0.2deg; background:#f1e9a9;">
     <div class="valentine-wrap">
-      <div class="valentine-text">leave me a lil note ദ್ದি ˉ͈̀꒳ˉ͈́ )✧</div>
+      <div class="valentine-text">leave me a lil note (>ᴗ•)! (can be anything)</div>
 
       <textarea id="hisMsg" class="msgBox" maxlength="250" placeholder="type here..."></textarea>
       <div style="font-size:0.85rem; opacity:0.6;" id="charCount">0 / 250</div>
@@ -491,7 +489,8 @@
   <div class="post-it clickable" data-love="1" id="loveCalcNote"
        style="z-index:1; --dx:0px; --dy:18px; --rot:0.2deg; background:#ffd7ea;"
        onclick="peel(this,'(｡•̀ᴗ-)✧',event)">
-    <div class="calc" onclick="event.stopPropagation()">
+    <!-- NOTE: removed the old onclick stopPropagation here so the whole area can peel nicely -->
+    <div class="calc" id="calcInner">
       <div class="calcTitle">love calculator (definitely real)</div>
       <div class="calcRow">
         <input id="nameA" class="calcInput" placeholder="your name" />
@@ -501,14 +500,13 @@
         <button class="btn" id="calcBtn">calculate</button>
       </div>
       <div id="calcResult" class="calcResult">type names & press calculate</div>
-      <div style="font-size:0.85rem; opacity:0.55;">(click outside this box to peel)</div>
+      <div style="font-size:0.85rem; opacity:0.55;">(click anywhere on this note to peel)</div>
     </div>
   </div>
 
-  <!-- SPOTIFY (UNDER calculator but still clickable) -->
+  <!-- SPOTIFY (UNDER calculator; DOES NOT peel until 5 clicks) -->
   <div class="post-it clickable" data-love="1" id="spotifyNote"
-       style="z-index:0; --dx:0px; --dy:18px; --rot:0.2deg; background:#bfdced;"
-       onclick="peel(this,'(≧◡≦)',event)">
+       style="z-index:0; --dx:0px; --dy:18px; --rot:0.2deg; background:#bfdced;">
     <div class="spotify-card">
       <a class="spotify-link" id="spotifyLink"
          href="https://open.spotify.com/playlist/5coHt3xfiJXlN4iYdMt005?si=c7a04154a33c4011"
@@ -721,7 +719,19 @@
       return 12 + (hashStr(A + "|" + B) % 81); // 12..92
     }
 
+    // IMPORTANT: make the whole calc note clickable to peel,
+    // but stop peel ONLY when interacting with inputs/buttons.
+    const loveCalcNote = document.getElementById('loveCalcNote');
+    const calcInner = document.getElementById('calcInner');
+
+    // stop bubbling only on the interactive controls
+    [nameA, nameB, calcBtn].forEach(el => {
+      el.addEventListener('pointerdown', (e) => e.stopPropagation());
+      el.addEventListener('click', (e) => e.stopPropagation());
+    });
+
     calcBtn.addEventListener('click', (e) => {
+      // we already stopped propagation above, but keep it safe
       e.stopPropagation();
 
       const a = nameA.value;
@@ -748,46 +758,86 @@
       popKaomoji('(｡•̀ᴗ-)✧', e, 900);
     });
 
-    /* ---------- SPOTIFY LINK + SECRET EGG (works even with other clicks) ---------- */
+    /* ---------- SPOTIFY: do NOT peel unless 5 clicks ---------- */
+    const spotifyNote = document.getElementById('spotifyNote');
     const spotifyLink = document.getElementById('spotifyLink');
     const spotifyCover = document.getElementById('spotifyCover');
     const secretNote = document.getElementById('secretNote');
 
-    // keep it in sync with SPOTIFY_URL
     spotifyLink.href = SPOTIFY_URL;
 
-    // Clicking the link area should not peel the note
+    // clicking the link area should never peel
     spotifyLink.addEventListener('click', (e) => {
       e.stopPropagation();
     });
 
-    let secretClicks = 0;
-    let openedOnce = false;
+    let eggClicks = 0;
+    let openedSpotifyOnce = false;
 
-    // Count 5 clicks on the cover; only open Spotify on the first click
+    function showTryMore(nLeft, e){
+      if (nLeft <= 0) return;
+      const msg = `try ${nLeft} more time${nLeft === 1 ? "" : "s"}…`;
+      popKaomoji(msg, e, 950);
+    }
+
+    // count clicks on the whole spotify note (cover/title included),
+    // but prevent the note from peeling until click 5.
+    spotifyNote.addEventListener('click', (e) => {
+      // if click came from the link, it already stopPropagation'd
+      // so this mostly handles clicks on the note background too.
+      eggClicks++;
+
+      // show feedback 1..4
+      const left = 5 - eggClicks;
+      if (left > 0) {
+        showTryMore(left, e);
+        spawnBurst(e.clientX, e.clientY);
+      }
+
+      if (eggClicks >= 5) {
+        eggClicks = 0;
+
+        // reveal secret note
+        secretNote.classList.remove('hide');
+        secretNote.classList.remove('soft-in');
+        void secretNote.offsetWidth;
+        secretNote.classList.add('soft-in');
+
+        // now peel spotify note on the 5th click
+        peel(spotifyNote, '(〃▽〃)', e);
+      }
+    });
+
+    // also handle cover clicks:
+    // open spotify only once (first cover click), after that prevent spam tabs
     spotifyCover.addEventListener('click', (e) => {
       e.stopPropagation();
 
-      if (!openedOnce) {
-        openedOnce = true;
-        // let the anchor default open the playlist
+      if (!openedSpotifyOnce) {
+        openedSpotifyOnce = true;
+        // let the anchor default open on first click
       } else {
-        e.preventDefault(); // prevent new tabs while spam-clicking for the egg
+        e.preventDefault(); // stop opening new tabs on 2nd+ cover click
       }
 
-      secretClicks++;
-      popKaomoji('(￢‿￢ )', e, 650);
-      spawnBurst(e.clientX, e.clientY);
+      // still count this click toward the egg
+      eggClicks++;
 
-      if (secretClicks >= 5) {
-        secretClicks = 0;
+      const left = 5 - eggClicks;
+      if (left > 0) {
+        showTryMore(left, e);
+        spawnBurst(e.clientX, e.clientY);
+      }
+
+      if (eggClicks >= 5) {
+        eggClicks = 0;
 
         secretNote.classList.remove('hide');
         secretNote.classList.remove('soft-in');
         void secretNote.offsetWidth;
         secretNote.classList.add('soft-in');
 
-        popKaomoji('(〃▽〃)', e, 1200);
+        peel(spotifyNote, '(〃▽〃)', e);
       }
     });
   </script>
