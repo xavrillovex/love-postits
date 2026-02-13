@@ -463,7 +463,7 @@
   <div class="post-it" data-love="1" id="messageNote"
        style="z-index:1; --dx:0px; --dy:18px; --rot:0.2deg; background:#f1e9a9;">
     <div class="valentine-wrap">
-      <div class="valentine-text">leave me a lil note ദ্দി ˉ͈̀꒳ˉ͈́ )✧</div>
+      <div class="valentine-text">leave me a lil note ദ്ദി ˉ͈̀꒳ˉ͈́ )✧</div>
 
       <textarea id="hisMsg" class="msgBox" maxlength="250" placeholder="type here..."></textarea>
       <div style="font-size:0.85rem; opacity:0.6;" id="charCount">0 / 250</div>
@@ -494,7 +494,7 @@
     </div>
   </div>
 
-  <!-- SPOTIFY (opens playlist on click; cover 5x unlocks secret) -->
+  <!-- SPOTIFY (click note = open + peel; cover click opens playlist + counts 5x secret) -->
   <div class="post-it clickable" data-love="1" id="spotifyNote"
        style="z-index:-1; --dx:0px; --dy:18px; --rot:0.2deg; background:#bfdced;"
        onclick="openSpotifyAndPeel(this,event)">
@@ -739,24 +739,32 @@
       peel(el, '(≧◡≦)', event);
     }
 
-    /* ---------- SECRET EGG: click cover 5 times ---------- */
+    /* ---------- SECRET EGG: click cover 5 times (also opens playlist once) ---------- */
     const spotifyCover = document.getElementById('spotifyCover');
     const secretNote = document.getElementById('secretNote');
+
     let secretClicks = 0;
+    let spotifyOpenedOnce = false;
 
     spotifyCover.addEventListener('click', (e) => {
-      e.stopPropagation(); // stops Spotify note from opening + peeling
+      e.stopPropagation(); // prevents the note click (open+peel)
+
+      // open playlist from the cover (only once)
+      if (!spotifyOpenedOnce) {
+        spotifyOpenedOnce = true;
+        window.open(SPOTIFY_URL, "_blank");
+      }
 
       secretClicks++;
       popKaomoji('(￢‿￢ )', e, 700);
       spawnBurst(e.clientX, e.clientY);
 
-      if (secretClicks === 5) {
+      if (secretClicks >= 5) {
         secretClicks = 0;
 
         secretNote.classList.remove('hide');
         secretNote.classList.remove('soft-in');
-        void secretNote.offsetWidth;
+        void secretNote.offsetWidth; // restart animation
         secretNote.classList.add('soft-in');
 
         popKaomoji('(〃▽〃)', e, 1200);
@@ -765,3 +773,4 @@
   </script>
 </body>
 </html>
+
