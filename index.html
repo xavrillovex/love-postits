@@ -110,7 +110,7 @@
       transition: opacity 220ms ease, transform 220ms ease;
     }
 
-    /* secret note reveal */
+    /* secret + end note reveal */
     .soft-in { animation: softIn 260ms ease-out; }
     @keyframes softIn {
       0% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0.98); }
@@ -485,11 +485,10 @@
     </div>
   </div>
 
-  <!-- LOVE CALCULATOR (ABOVE spotify) -->
+  <!-- LOVE CALCULATOR (above spotify) -->
   <div class="post-it clickable" data-love="1" id="loveCalcNote"
        style="z-index:1; --dx:0px; --dy:18px; --rot:0.2deg; background:#ffd7ea;"
        onclick="peel(this,'(｡•̀ᴗ-)✧',event)">
-    <!-- NOTE: removed the old onclick stopPropagation here so the whole area can peel nicely -->
     <div class="calc" id="calcInner">
       <div class="calcTitle">love calculator (definitely real)</div>
       <div class="calcRow">
@@ -504,7 +503,7 @@
     </div>
   </div>
 
-  <!-- SPOTIFY (UNDER calculator; DOES NOT peel until 5 clicks) -->
+  <!-- SPOTIFY (under calculator; does NOT peel until 5 clicks) -->
   <div class="post-it clickable" data-love="1" id="spotifyNote"
        style="z-index:0; --dx:0px; --dy:18px; --rot:0.2deg; background:#bfdced;">
     <div class="spotify-card">
@@ -520,10 +519,27 @@
   <!-- SECRET NOTE (hidden until unlocked) -->
   <div class="post-it clickable hide" data-love="0" id="secretNote"
        style="z-index:999; --dx:0px; --dy:0px; --rot:0.3deg; background:#e8ddf2;"
-       onclick="peel(this,'(〃▽〃)',event)">
+       onclick="peelAndEnd(this,'(〃▽〃)',event)">
     i tried my best with this,<br><br>
     hope u approve mr coder 😼<br><br>
     dดi(｡•̀ ,&lt;)~✩
+  </div>
+
+  <!-- END NOTE (hidden until secret note is peeled) -->
+  <div class="post-it hide" data-love="0" id="endNote"
+       style="z-index:1000; --dx:0px; --dy:0px; --rot:-0.2deg; background:#f3c6d6;">
+    <div style="display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center; width:100%; height:100%;">
+      <div style="font-size:1.18rem;">thankyou Kai ♡</div>
+
+      <img
+        src="end.gif"
+        loading="lazy"
+        alt="gif"
+        style="width:190px; height:190px; object-fit:cover; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,0.12);"
+      />
+
+      <div style="font-size:0.95rem; opacity:0.75;">(that’s all)</div>
+    </div>
   </div>
 
   <!-- RESET -->
@@ -628,6 +644,22 @@
       peelNoKaomoji(el, event);
     }
 
+    // show end note after secret is peeled
+    function showEndNote() {
+      const endNote = document.getElementById('endNote');
+      if (!endNote) return;
+
+      endNote.classList.remove('hide');
+      endNote.classList.remove('soft-in');
+      void endNote.offsetWidth;
+      endNote.classList.add('soft-in');
+    }
+
+    function peelAndEnd(el, kaomoji, event) {
+      peel(el, kaomoji, event);
+      setTimeout(showEndNote, 250);
+    }
+
     // Valentine logic
     const valentineNote = document.getElementById('valentineNote');
     const newFeelingsNote = document.getElementById('newFeelingsNote');
@@ -719,19 +751,13 @@
       return 12 + (hashStr(A + "|" + B) % 81); // 12..92
     }
 
-    // IMPORTANT: make the whole calc note clickable to peel,
-    // but stop peel ONLY when interacting with inputs/buttons.
-    const loveCalcNote = document.getElementById('loveCalcNote');
-    const calcInner = document.getElementById('calcInner');
-
-    // stop bubbling only on the interactive controls
+    // Make calc inputs/buttons NOT peel, but anywhere else on the note peels
     [nameA, nameB, calcBtn].forEach(el => {
       el.addEventListener('pointerdown', (e) => e.stopPropagation());
       el.addEventListener('click', (e) => e.stopPropagation());
     });
 
     calcBtn.addEventListener('click', (e) => {
-      // we already stopped propagation above, but keep it safe
       e.stopPropagation();
 
       const a = nameA.value;
@@ -766,7 +792,7 @@
 
     spotifyLink.href = SPOTIFY_URL;
 
-    // clicking the link area should never peel
+    // Clicking the link area should never peel the note
     spotifyLink.addEventListener('click', (e) => {
       e.stopPropagation();
     });
@@ -780,14 +806,10 @@
       popKaomoji(msg, e, 950);
     }
 
-    // count clicks on the whole spotify note (cover/title included),
-    // but prevent the note from peeling until click 5.
+    // Count clicks on spotify note background too
     spotifyNote.addEventListener('click', (e) => {
-      // if click came from the link, it already stopPropagation'd
-      // so this mostly handles clicks on the note background too.
       eggClicks++;
 
-      // show feedback 1..4
       const left = 5 - eggClicks;
       if (left > 0) {
         showTryMore(left, e);
@@ -797,30 +819,26 @@
       if (eggClicks >= 5) {
         eggClicks = 0;
 
-        // reveal secret note
         secretNote.classList.remove('hide');
         secretNote.classList.remove('soft-in');
         void secretNote.offsetWidth;
         secretNote.classList.add('soft-in');
 
-        // now peel spotify note on the 5th click
         peel(spotifyNote, '(〃▽〃)', e);
       }
     });
 
-    // also handle cover clicks:
-    // open spotify only once (first cover click), after that prevent spam tabs
+    // Cover clicks: open spotify only once, then prevent extra tabs
     spotifyCover.addEventListener('click', (e) => {
       e.stopPropagation();
 
       if (!openedSpotifyOnce) {
         openedSpotifyOnce = true;
-        // let the anchor default open on first click
+        // allow anchor default open on first click
       } else {
-        e.preventDefault(); // stop opening new tabs on 2nd+ cover click
+        e.preventDefault();
       }
 
-      // still count this click toward the egg
       eggClicks++;
 
       const left = 5 - eggClicks;
