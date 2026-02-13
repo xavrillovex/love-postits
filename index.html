@@ -309,7 +309,7 @@
     }
     .spotify-title { font-size: 1.05rem; }
 
-    /* Make the link look like normal content */
+    /* anchor styling (so it doesn't look like a blue link) */
     .spotify-link {
       text-decoration: none;
       color: inherit;
@@ -474,7 +474,7 @@
   <div class="post-it" data-love="1" id="messageNote"
        style="z-index:1; --dx:0px; --dy:18px; --rot:0.2deg; background:#f1e9a9;">
     <div class="valentine-wrap">
-      <div class="valentine-text">leave me a lil note ദ্দി ˉ͈̀꒳ˉ͈́ )✧</div>
+      <div class="valentine-text">leave me a lil note ദ್ದি ˉ͈̀꒳ˉ͈́ )✧</div>
 
       <textarea id="hisMsg" class="msgBox" maxlength="250" placeholder="type here..."></textarea>
       <div style="font-size:0.85rem; opacity:0.6;" id="charCount">0 / 250</div>
@@ -487,9 +487,9 @@
     </div>
   </div>
 
-  <!-- LOVE CALCULATOR -->
+  <!-- LOVE CALCULATOR (ABOVE spotify) -->
   <div class="post-it clickable" data-love="1" id="loveCalcNote"
-       style="z-index:0; --dx:0px; --dy:18px; --rot:0.2deg; background:#ffd7ea;"
+       style="z-index:1; --dx:0px; --dy:18px; --rot:0.2deg; background:#ffd7ea;"
        onclick="peel(this,'(｡•̀ᴗ-)✧',event)">
     <div class="calc" onclick="event.stopPropagation()">
       <div class="calcTitle">love calculator (definitely real)</div>
@@ -505,16 +505,14 @@
     </div>
   </div>
 
-  <!-- SPOTIFY NOTE:
-       - Clicking the note background peels it
-       - Clicking the cover/title is a REAL LINK (reliable)
-       - Clicking cover 5x reveals secret note
-  -->
+  <!-- SPOTIFY (UNDER calculator but still clickable) -->
   <div class="post-it clickable" data-love="1" id="spotifyNote"
-       style="z-index:-1; --dx:0px; --dy:18px; --rot:0.2deg; background:#bfdced;"
+       style="z-index:0; --dx:0px; --dy:18px; --rot:0.2deg; background:#bfdced;"
        onclick="peel(this,'(≧◡≦)',event)">
     <div class="spotify-card">
-      <a class="spotify-link" id="spotifyLink" href="https://open.spotify.com/playlist/5coHt3xfiJXlN4iYdMt005?si=c7a04154a33c4011" target="_blank" rel="noopener">
+      <a class="spotify-link" id="spotifyLink"
+         href="https://open.spotify.com/playlist/5coHt3xfiJXlN4iYdMt005?si=c7a04154a33c4011"
+         target="_blank" rel="noopener">
         <img id="spotifyCover" src="playlistcover.jpg" alt="Playlist cover" title="psst">
         <div class="spotify-title">Playlist for u</div>
       </a>
@@ -750,33 +748,31 @@
       popKaomoji('(｡•̀ᴗ-)✧', e, 900);
     });
 
-    /* ---------- SPOTIFY LINK + SECRET EGG ---------- */
+    /* ---------- SPOTIFY LINK + SECRET EGG (works even with other clicks) ---------- */
     const spotifyLink = document.getElementById('spotifyLink');
     const spotifyCover = document.getElementById('spotifyCover');
     const secretNote = document.getElementById('secretNote');
 
-    // Make sure link is correct even if you change SPOTIFY_URL
+    // keep it in sync with SPOTIFY_URL
     spotifyLink.href = SPOTIFY_URL;
 
-    // Clicking the link should NOT peel the note
+    // Clicking the link area should not peel the note
     spotifyLink.addEventListener('click', (e) => {
       e.stopPropagation();
     });
 
     let secretClicks = 0;
-    let openedSpotifyOnce = false;
+    let openedOnce = false;
 
+    // Count 5 clicks on the cover; only open Spotify on the first click
     spotifyCover.addEventListener('click', (e) => {
-      // Don’t peel the note when clicking the cover
       e.stopPropagation();
 
-      // Open Spotify only on the FIRST cover click (prevents 5 tabs)
-      if (!openedSpotifyOnce) {
-        openedSpotifyOnce = true;
-        // allow the anchor default to open in new tab
+      if (!openedOnce) {
+        openedOnce = true;
+        // let the anchor default open the playlist
       } else {
-        // after the first time, stop the link opening so you can spam-click for the egg
-        e.preventDefault();
+        e.preventDefault(); // prevent new tabs while spam-clicking for the egg
       }
 
       secretClicks++;
